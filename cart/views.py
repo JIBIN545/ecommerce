@@ -9,8 +9,9 @@ import razorpay
 from cart.models import Order
 from cart.models import Order_items
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
-
+@method_decorator(login_required, name='dispatch')
 class AddtoCart(View):
     def get(self,request,i):
         u=request.user  # logged in user
@@ -27,7 +28,7 @@ class AddtoCart(View):
              c=Cart.objects.create(user=u,products=p,quantity=1)
              c.save()
         return redirect('cart:cartview')
-
+@method_decorator(login_required, name='dispatch')
 class CartView(View):
     def get(self,request):
         c=Cart.objects.all()
@@ -36,7 +37,7 @@ class CartView(View):
             total=total+i.subtotal()
         context={'cart':c,'total':total}
         return render(request,'cart.html',context)
-
+@method_decorator(login_required, name='dispatch')
 class Cartdecrement(View):
     def get(self,request,i):
         c=Cart.objects.get(id=i)
@@ -47,7 +48,7 @@ class Cartdecrement(View):
             c.delete()
 
         return redirect('cart:cartview')
-
+@method_decorator(login_required, name='dispatch')
 class Cartremove(View):
     def get(self,request,i):
         c=Cart.objects.get(id=i)
@@ -60,11 +61,16 @@ from cart.forms import Checkoutform
 class Checkout(View):
     def post(self,request):
         form_instance=Checkoutform(request.POST)
+        print('POST data',request.POST)
+        print('FORM ERRORS',form_instance.errors)
+
         if form_instance.is_valid():
+            print('form valid')
             o=form_instance.save(commit=False)
+            print(o.payment_method)
             u=request.user
             o.user=u
-            c=Cart.objects.get(user=u)
+            c=Cart.objects.filter(user=u)
             total=0
             for i in c:
                 total=total+i.subtotal()
@@ -79,11 +85,11 @@ class Checkout(View):
                 response_payment=client.order.create(dict(amount=total*100,currency='INR'))
                 print(response_payment)
 
-                o.order_id=response_payment['order_id']
+                o.order_id=response_payment['id']
                 o.save()
 
                 context = {'payment': response_payment}
-                return redirect('payment.html', context)
+                return render(request,'payment.html', context)
 
             else:
                 id='ord_cod'+uuid.uuid4().hex[:14]
@@ -91,12 +97,12 @@ class Checkout(View):
                 o.is_ordered = True
                 o.save()
 
-                c = Cart.objects.get(user=request.user)
+                c = Cart.objects.filter(user=request.user)
                 for i in c:
-                    item = Order_items.objects.create(order=o, product=i.product, quantity=i.quantity)
+                    item = Order_items.objects.create(order=o, product=i.products, quantity=i.quantity)
                     item.save()
-                    item.produts.stock = item.quantity
-                    item.products.save()
+                    item.product.stock = item.quantity
+                    item.product.save()
                 c.delete()
                 return render(request, 'payment.html')
 
@@ -118,20 +124,21 @@ from django.views.decorators.csrf import csrf_exempt
 @method_decorator(login_required, name='dispatch')
 class PaymentSuccess(View):
     def post(self,request):
+        print("Sucess view hit")
         print(request.POST)
         id=request.POST.get('razorpay_order_id')
         o=Order.objects.get(order_id=id)
         o.is_ordered = True
         o.save()
-        c=Cart.objects.get(user=request.user)
+        c=Cart.objects.filter(user=request.user)
         for i in c:
-            item=Order_items.objects.create(order=o,product=i.product,quantity=i.quantity)
+            item=Order_items.objects.create(order=o,product=i.products,quantity=i.quantity)
             item.save()
-            item.produts.stock=item.quantity
-            item.products.save()
+            item.product.stock=item.quantity
+            item.product.save()
         c.delete()
         return render(request,'paymentsuccess.html')
-
+@method_decorator(login_required, name='dispatch')
 class ordersummary(View):
     def get(self,request):
         o=Order.objects.filter(user=request.user,is_ordered=True)

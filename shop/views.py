@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import render,redirect
 from shop.models import Categorys
 from shop.forms import RegisterForm
@@ -11,8 +12,30 @@ from django.views import View
 
 from shop.models import Products
 
-from shop.forms import ProductForm, CategoryForm, StockForm
+# def decorator(fun):
+#     def wrapper(*args):
+#         return fun(*args)
+#     return wrapper
 
+# def admin_required(fun):
+#     def wrapper(request):
+#         if request.user.is_superuser == False:
+#             return HttpResponse("Admin user only")
+#         else:
+#             return fun(request)
+#     return wrapper
+
+
+
+
+
+
+
+from shop.decorators import admin_required
+
+from shop.forms import ProductForm, CategoryForm, StockForm
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
 
 class Categories(View):
     def get(self, request):
@@ -74,12 +97,13 @@ class userregister(View):
         context = {'form':form_instance}
         return render(request, 'register.html',context)
 
+@method_decorator(login_required, name='dispatch')
+
 class userlogout(View):
     def get(self, request):
         logout(request)
         return redirect('shop:login')
-from django.utils.decorators import method_decorator
-from django.contrib.auth.decorators import login_required
+@method_decorator(admin_required, name='dispatch')
 @method_decorator(login_required, name='dispatch')
 class AddCategory(View):
     def post(self,request):

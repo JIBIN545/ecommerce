@@ -2,28 +2,31 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-{
-         {{% for j in i.items.all %}}
-         {{j.product.name}}.{{j.product.price}},{{
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
 
-            <h2>Register</h2>
-
-
-        </div>
-    </div>
-</div>
 <div class="container w-50 p-5 mt-5 border border-2">
     {% for i in order %}
     <div class="container mt-5 p-5 border border-4">
         <h4>Orderno:{{i.order_id}}</h4>
         <p>OrderTotal:{{i.amount}}</p>
         <p>Orderedon:{{i.order_date}}</p>
-        <p> Orderstatus:<span class="text=danger">{{i.delivety_status}}</span></p>
-        {% for j in i.items,all %}
-        <div class="card mb-3" style="max-width"
+        <p> Orderstatus:<span class="text=danger">{{i.delivery_status}}</span></p>
+        {% for j in i.items.all %}
+        <div class="card mb-3" style="max-width: 540px;">
+  <div class="row g-0">
+    <div class="col-md-4">
+      <img src="{{j.product.image.url}}" class="img-fluid rounded-start" alt="...">
     </div>
+    <div class="col-md-8">
+      <div class="card-body">
+        <h5 class="card-title">Product Name:{{j.product.name}}</h5>
+        <p class="card-text">Price:{{j.product.price}}</p>
+        <p class="card-text">Qty:{{j.quantity}}</p>
+      </div>
+    </div>
+  </div>
+</div>
+        {% endfor %}
+    </div>
+    {% endfor %}
 </div>
 {% endblock %}
